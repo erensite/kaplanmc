@@ -1,9 +1,12 @@
 // KaplanMC SMP - Site + Başvuru Botu (tek process)
-// Gerekli paketler: npm install express discord.js dotenv
+// Gerekli paketler:
+// npm install express discord.js dotenv
 
 require('dotenv').config();
+
 const path = require('path');
 const express = require('express');
+
 const {
     Client,
     GatewayIntentBits,
@@ -16,10 +19,13 @@ const {
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const APPLICATION_CHANNEL_ID = process.env.APPLICATION_CHANNEL_ID;
-const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID; // isteğe bağlı
+const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
 const PORT = process.env.PORT || 3000;
 
-// ---------- Discord Bot ----------
+// =====================================================
+// DISCORD BOT
+// =====================================================
+
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
 });
@@ -28,101 +34,268 @@ client.once('ready', () => {
     console.log(`Discord bot ${client.user.tag} olarak bağlandı.`);
 });
 
-// Onayla / Reddet butonlarını işle
+// Onayla / Reddet butonları
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
+
     const [action] = interaction.customId.split('_');
+
     if (action !== 'onayla' && action !== 'reddet') return;
 
     const member = interaction.member;
+
     const isStaff =
         member.permissions.has(PermissionFlagsBits.ManageGuild) ||
         (STAFF_ROLE_ID && member.roles.cache.has(STAFF_ROLE_ID));
 
     if (!isStaff) {
-        await interaction.reply({ content: 'Bu işlemi yapmak için yetkin yok.', ephemeral: true });
+        await interaction.reply({
+            content: 'Bu işlemi yapmak için yetkin yok.',
+            ephemeral: true
+        });
+
         return;
     }
 
     const oldEmbed = interaction.message.embeds[0];
+
+    if (!oldEmbed) {
+        await interaction.reply({
+            content: 'Başvuru mesajı bulunamadı.',
+            ephemeral: true
+        });
+
+        return;
+    }
+
     const newEmbed = EmbedBuilder.from(oldEmbed);
-    const durumIndex = newEmbed.data.fields.findIndex(f => f.name === 'Durum');
+
+    const durumIndex = newEmbed.data.fields?.findIndex(
+        f => f.name === 'Durum'
+    );
+
     const yeniDurum =
         action === 'onayla'
             ? `✅ Onaylandı — ${interaction.user.username}`
             : `❌ Reddedildi — ${interaction.user.username}`;
 
-    if (durumIndex >= 0) newEmbed.data.fields[durumIndex].value = yeniDurum;
-    newEmbed.setColor(action === 'onayla' ? 0x2ecc71 : 0xe74c3c);
+    if (durumIndex >= 0) {
+        newEmbed.data.fields[durumIndex].value = yeniDurum;
+    }
 
-    const disabledRow = new ActionRowBuilder().addComponents(
-        ButtonBuilder.from(interaction.message.components[0].components[0]).setDisabled(true),
-        ButtonBuilder.from(interaction.message.components[0].components[1]).setDisabled(true),
+    newEmbed.setColor(
+        action === 'onayla'
+            ? 0x2ecc71
+            : 0xe74c3c
     );
 
-    await interaction.update({ embeds: [newEmbed], components: [disabledRow] });
+    const disabledRow = new ActionRowBuilder().addComponents(
+        ButtonBuilder
+            .from(interaction.message.components[0].components[0])
+            .setDisabled(true),
+
+        ButtonBuilder
+            .from(interaction.message.components[0].components[1])
+            .setDisabled(true)
+    );
+
+    await interaction.update({
+        embeds: [newEmbed],
+        components: [disabledRow]
+    });
 });
 
-client.login(TOKEN);
+// =====================================================
+// WEB SİTESİ
+// =====================================================
 
-// ---------- Web Sitesi + API ----------
 const app = express();
+
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(
+    express.static(
+        path.join(__dirname, 'public')
+    )
+);
+
+// =====================================================
+// MINECRAFT SUNUCU
+// =====================================================
 
 const SERVER_IP = 'kaplanmc.aternos.me';
 
+// =====================================================
+// MCSTATUS.IO API
+// =====================================================
+
 app.get('/api/status', async (req, res) => {
     try {
-        const response = await fetch(`https://api.mcsrvstat.us/3/${SERVER_IP}`, {
-            headers: { 'User-Agent': 'KaplanMC-Site/1.0' },
+
+        const apiURL =
+            `https://api.mcstatus.io/v2/status/java/${SERVER_IP}`;
+
+        const response = await fetch(apiURL, {
+            headers: {
+                'User-Agent': 'KaplanMC-Site/1.0'
+            }
         });
+
+        if (!response.ok) {
+            throw new Error(
+                `MCStatus.io HTTP ${response.status}`
+            );
+        }
+
         const data = await response.json();
+
+        // MCStatus.io verisini doğrudan siteye gönderiyoruz
         res.json(data);
+
     } catch (err) {
-        console.error('Sunucu durumu alınamadı:', err);
-        res.status(500).json({ online: false, error: 'Durum alınamadı' });
+
+        console.error(
+            'MCStatus.io sunucu durumu alınamadı:',
+            err
+        );
+
+        res.status(500).json({
+            online: false,
+            error: 'Sunucu durumu alınamadı'
+        });
     }
 });
 
-app.post('/api/apply', async (req, res) => {
-    try {
-        const { name, age, role, hours, reason, discord } = req.body;
+// =====================================================
+// YETKİLİ BAŞVURUSU
+// =====================================================
 
-        if (!name || !age || !role || !hours || !reason || !discord) {
-            return res.status(400).json({ error: 'Eksik alan var.' });
+app.post('/api/apply', async (req, res) => {
+
+    try {
+
+        const {
+            name,
+            age,
+            role,
+            hours,
+            reason,
+            discord
+        } = req.body;
+
+        if (
+            !name ||
+            !age ||
+            !role ||
+            !hours ||
+            !reason ||
+            !discord
+        ) {
+            return res.status(400).json({
+                error: 'Eksik alan var.'
+            });
         }
 
         const embed = new EmbedBuilder()
-            .setTitle('📋 Yeni Yetkili Başvurusu (Siteden)')
-            .setColor(0xffcc00)
-            .addFields(
-                { name: 'Discord Kullanıcı Adı', value: discord, inline: true },
-                { name: 'Minecraft Nick', value: name, inline: true },
-                { name: 'Yaş', value: String(age), inline: true },
-                { name: 'Başvurulan Grup', value: role, inline: true },
-                { name: 'Günlük Aktiflik', value: hours, inline: true },
-                { name: 'Sebep', value: reason },
-                { name: 'Durum', value: '⏳ Beklemede' },
+            .setTitle(
+                '📋 Yeni Yetkili Başvurusu (Siteden)'
             )
+            .setColor(0xffcc00)
+
+            .addFields(
+                {
+                    name: 'Discord Kullanıcı Adı',
+                    value: discord,
+                    inline: true
+                },
+                {
+                    name: 'Minecraft Nick',
+                    value: name,
+                    inline: true
+                },
+                {
+                    name: 'Yaş',
+                    value: String(age),
+                    inline: true
+                },
+                {
+                    name: 'Başvurulan Grup',
+                    value: role,
+                    inline: true
+                },
+                {
+                    name: 'Günlük Aktiflik',
+                    value: hours,
+                    inline: true
+                },
+                {
+                    name: 'Sebep',
+                    value: reason
+                },
+                {
+                    name: 'Durum',
+                    value: '⏳ Beklemede'
+                }
+            )
+
             .setTimestamp();
 
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('onayla_web').setLabel('Onayla').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('reddet_web').setLabel('Reddet').setStyle(ButtonStyle.Danger),
+        const row = new ActionRowBuilder()
+            .addComponents(
+
+                new ButtonBuilder()
+                    .setCustomId('onayla_web')
+                    .setLabel('Onayla')
+                    .setStyle(ButtonStyle.Success),
+
+                new ButtonBuilder()
+                    .setCustomId('reddet_web')
+                    .setLabel('Reddet')
+                    .setStyle(ButtonStyle.Danger)
+
+            );
+
+        const channel =
+            await client.channels.fetch(
+                APPLICATION_CHANNEL_ID
+            );
+
+        await channel.send({
+            embeds: [embed],
+            components: [row]
+        });
+
+        res.json({
+            ok: true
+        });
+
+    } catch (err) {
+
+        console.error(
+            'Başvuru gönderilemedi:',
+            err
         );
 
-        const channel = await client.channels.fetch(APPLICATION_CHANNEL_ID);
-        await channel.send({ embeds: [embed], components: [row] });
-
-        res.json({ ok: true });
-    } catch (err) {
-        console.error('Başvuru gönderilemedi:', err);
-        res.status(500).json({ error: 'Sunucu hatası' });
+        res.status(500).json({
+            error: 'Sunucu hatası'
+        });
     }
 });
 
+// =====================================================
+// SUNUCUYU BAŞLAT
+// =====================================================
+
 app.listen(PORT, () => {
-    console.log(`Site http://localhost:${PORT} adresinde çalışıyor.`);
+
+    console.log(
+        `Site http://localhost:${PORT} adresinde çalışıyor.`
+    );
+
 });
-          
+
+// =====================================================
+// DISCORD BOTU BAŞLAT
+// =====================================================
+
+client.login(TOKEN);
