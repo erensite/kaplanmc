@@ -316,7 +316,7 @@
 
     <nav>
         <div class="logo">
-            <i class="fa-solid fa-paw"></i> KaplanMC SMP
+            <i class="fa-solid fa-paw"></i> KaplanMC
         </div>
         <ul class="nav-links">
             <li><button onclick="switchPage('home')" id="btn-home" class="active"><i class="fa-solid fa-house"></i> Ana Sayfa</button></li>
@@ -328,7 +328,7 @@
     </nav>
 
     <div class="hero">
-        <h1>KaplanMC SMP</h1>
+        <h1>KaplanMC</h1>
         <p>Klanını Kur, Köyünü İnşa Et, Savaşlara Katıl ve Efsane Ol!</p>
         <div class="ip-badge" onclick="copyIP()" title="IP'yi kopyalamak için tıkla!">
             <i class="fa-solid fa-server"></i> <span id="ipText">kaplanmc.aternos.me</span>
@@ -378,10 +378,19 @@
             </div>
 
             <div class="card">
-                <h2><i class="fa-solid fa-earth-europe"></i> KaplanMC SMP Nedir?</h2>
-                <p style="color: #b0b5c1; line-height: 1.6;">
-                    KaplanMC SMP sunucusunda tamamen hayatta kalma odaklı, dostlukların kurulduğu, klan savaşlarının yapıldığı ve ekonomik ticaretin döndüğü devasa bir dünya seni bekliyor! Toprağını koru, müttefikler bul ve sunucunun en güçlü krallığı ol.
-                </p>
+                <h2><i class="fa-solid fa-gamepad"></i> Oyun Modları</h2>
+                <div class="status-grid">
+                    <div class="status-card" style="cursor:pointer;" onclick="switchPage('home')">
+                        <i class="fa-solid fa-earth-europe"></i>
+                        <h3>SMP</h3>
+                        <p style="color: #ffcc00; font-size: 1rem;">Hayatta Kalma & Krallık</p>
+                    </div>
+                    <div class="status-card">
+                        <i class="fa-solid fa-explosion"></i>
+                        <h3>BoxPvP</h3>
+                        <p style="color: #ffcc00; font-size: 1rem;">Hızlı Tempolu Savaş</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -472,7 +481,7 @@
         <div id="page-applications" class="page-section">
             <div class="card">
                 <h2><i class="fa-solid fa-user-plus"></i> Yetkili Alımı Başvurusu</h2>
-                <p style="color: #a0a5b8; margin-bottom: 25px;">KaplanMC SMP ekibine katılarak bize destek olmak istiyorsan aşağıdaki formu doldurabilirsin! (Not: Bu form şu an sadece bilgilerini özetler; başvurunu Discord üzerinden yetkililere iletmen gerekir.)</p>
+                <p style="color: #a0a5b8; margin-bottom: 25px;">KaplanMC ekibine katılarak bize destek olmak istiyorsan aşağıdaki formu doldurabilirsin! (Not: Bu form şu an sadece bilgilerini özetler; başvurunu Discord üzerinden yetkililere iletmen gerekir.)</p>
 
                 <form id="applyForm" onsubmit="handleApply(event)">
                     <div class="form-group">
@@ -502,100 +511,4 @@
 
                     <div class="form-group">
                         <label><i class="fa-solid fa-clock"></i> Günde Kaç Saat Aktif Olabilirsin?</label>
-                        <input type="text" id="activeHours" required placeholder="Örn: 5-6 Saat">
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fa-solid fa-pen"></i> Neden Seni Seçmeliyiz?</label>
-                        <textarea id="applyReason" required placeholder="Kısaca kendinden ve tecrübenden bahset..."></textarea>
-                    </div>
-
-                    <button type="submit" class="submit-btn"><i class="fa-solid fa-paper-plane"></i> Başvuruyu Hazırla</button>
-                </form>
-
-                <div id="applyResult" style="display:none; margin-top: 25px;">
-                    <div class="admin-app-card" style="background:#1c2135; border:1px solid #2d334d; border-radius:12px; padding:20px;">
-                        <h3 style="color:#ffcc00; margin-bottom:10px;">Başvuru Özeti</h3>
-                        <p id="applySummary" style="color:#b0b5c1; white-space: pre-line; font-size:0.95rem;"></p>
-                        <p style="color:#70758a; font-size:0.85rem; margin-top:10px;">Bu metni kopyalayıp sunucunun Discord'undaki başvuru kanalına göndermen yeterli.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <footer>
-        &copy; <span id="year"></span> KaplanMC SMP — Kurucu: ErenSTfani. Resmi olarak Mojang/Aternos ile bağlantılı değildir.
-        <br>
-        <a href="https://discord.gg/k5VRTA3et" target="_blank" rel="noopener" style="color:#5865F2; font-weight:600;">Discord sunucumuza katıl</a>
-    </footer>
-
-    <div class="toast" id="toast"></div>
-
-    <script>
-        function switchPage(page) {
-            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-links button').forEach(el => el.classList.remove('active'));
-            document.getElementById('page-' + page).classList.add('active');
-            document.getElementById('btn-' + page).classList.add('active');
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2200);
-        }
-
-        function copyIP() {
-            const ip = document.getElementById('ipText').textContent;
-            navigator.clipboard.writeText(ip).then(() => {
-                showToast('IP kopyalandı: ' + ip);
-            }).catch(() => {
-                showToast('Kopyalanamadı, IP: ' + ip);
-            });
-        }
-
-        async function handleApply(e) {
-            e.preventDefault();
-            const submitBtn = e.target.querySelector('.submit-btn');
-            const data = {
-                name: document.getElementById('playerName').value,
-                age: document.getElementById('playerAge').value,
-                role: document.getElementById('targetRole').value,
-                hours: document.getElementById('activeHours').value,
-                reason: document.getElementById('applyReason').value,
-                discord: document.getElementById('discordName').value,
-            };
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Gönderiliyor...';
-
-            try {
-                const res = await fetch('/api/apply', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                });
-
-                if (!res.ok) throw new Error('Sunucu hatası');
-
-                document.getElementById('applySummary').textContent =
-                    'Başvurun Discord\'daki yetkili kanalına iletildi. Yetkililer inceleyip sana Discord üzerinden dönüş yapacak.';
-                document.getElementById('applyResult').style.display = 'block';
-                e.target.reset();
-                showToast('Başvurun gönderildi!');
-            } catch (err) {
-                showToast('Gönderilemedi, lütfen tekrar dene.');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Başvuruyu Hazırla';
-            }
-        }
-
-        document.getElementById('year').textContent = new Date().getFullYear();
-    </script>
-
-</body>
-</html>
+     
