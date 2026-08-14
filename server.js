@@ -70,6 +70,21 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const SERVER_IP = 'kaplanmc.aternos.me';
+
+app.get('/api/status', async (req, res) => {
+    try {
+        const response = await fetch(`https://api.mcsrvstat.us/3/${SERVER_IP}`, {
+            headers: { 'User-Agent': 'KaplanMC-Site/1.0' },
+        });
+        const data = await response.json();
+        res.json(data);
+    } catch (err) {
+        console.error('Sunucu durumu alınamadı:', err);
+        res.status(500).json({ online: false, error: 'Durum alınamadı' });
+    }
+});
+
 app.post('/api/apply', async (req, res) => {
     try {
         const { name, age, role, hours, reason, discord } = req.body;
@@ -110,3 +125,4 @@ app.post('/api/apply', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Site http://localhost:${PORT} adresinde çalışıyor.`);
 });
+          
